@@ -134,8 +134,8 @@
    "modo prueba": corrige, pero no guarda nada.
    ============================================================ */
 const CONFIG = {
-  supabaseUrl: "",       // ej.: "https://abcdefgh.supabase.co"
-  supabaseAnonKey: "",   // clave pública "anon" del proyecto
+  supabaseUrl: "",       // ej.: "https://abcdefgh.supabase.co" (sin "/" al final)
+  supabaseAnonKey: "",   // clave pública: "anon" (eyJ...) o "publishable" (sb_publishable_...)
   tabla: "evaluacion_funcionarios_publicos"
 };
 
@@ -295,6 +295,14 @@ function validarDatos() {
 
 let registro = null;
 
+function cabeceras() {
+  // Funciona con la clave "anon" (formato antiguo, empieza con "eyJ")
+  // y con la "publishable key" (formato nuevo, empieza con "sb_publishable_").
+  const h = { "apikey": CONFIG.supabaseAnonKey, "Content-Type": "application/json", "Prefer": "return=minimal" };
+  if (!CONFIG.supabaseAnonKey.startsWith("sb_")) h["Authorization"] = `Bearer ${CONFIG.supabaseAnonKey}`;
+  return h;
+}
+
 async function guardar() {
   const estado = $("estadoEnvio");
   estado.className = "estado-envio";
@@ -303,12 +311,7 @@ async function guardar() {
   try {
     const r = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${CONFIG.tabla}`, {
       method: "POST",
-      headers: {
-        "apikey": CONFIG.supabaseAnonKey,
-        "Authorization": `Bearer ${CONFIG.supabaseAnonKey}`,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-      },
+      headers: cabeceras(),
       body: JSON.stringify(registro)
     });
     if (!r.ok) throw new Error("HTTP " + r.status);
